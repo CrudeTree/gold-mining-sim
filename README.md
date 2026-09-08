@@ -4,6 +4,13 @@ A stylized 3D gold mining sim that runs in your browser. Peaceful by day, under 
 
 ## Play
 
+**Play in your browser: <https://crudetree.github.io/gold-mining-sim/>** — no install needed. Saves live in
+your browser, so everyone gets their own.
+
+Every push to `main` rebuilds and redeploys the site automatically (GitHub Actions → Pages).
+
+### Run locally
+
 Double-click `start.bat`. The first run installs dependencies; after that it opens the game in your browser.
 
 (Or from a terminal: `npm install` once, then `npm run dev`.)
