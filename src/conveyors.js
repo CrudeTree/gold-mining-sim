@@ -527,7 +527,14 @@ export class Conveyors {
     this.gridLines.visible = on;
     this.build.lastCell = null;
     this.build.dragging = false;
-    if (!on) this.game.buildings?.hideGhost();
+    if (!on) { this.game.buildings?.hideGhost(); return; }
+    // start on something you can actually place: an unplaced building kit first, then belts, then hoppers
+    const s = this.game.state, b = this.build;
+    const have = (tool) => tool === 'belt' ? s.belts : tool === 'hopper' ? s.hoppers : (s.kits[tool] || 0);
+    if (have(b.tool) <= 0) {
+      const kit = Object.keys(CONFIG.buildings).find((t) => (s.kits[t] || 0) > 0);
+      b.tool = kit || (s.belts > 0 ? 'belt' : s.hoppers > 0 ? 'hopper' : b.tool);
+    }
   }
 
   /**

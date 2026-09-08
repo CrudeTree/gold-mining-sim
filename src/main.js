@@ -1262,11 +1262,7 @@ class Game {
       this.resolveCollisions(p.pos, p.radius);
 
       // build mode (conveyors): B toggles; while active LMB/RMB/1/2/R belong to the builder
-      if (input.pressed('b')) {
-        const kits = Object.values(s.kits).reduce((a, n) => a + n, 0);
-        if (!this.conveyors.build.active && s.belts + s.hoppers + kits === 0 && this.conveyors.cells.size === 0) ui.toast('Buy conveyor belts, a belt hopper or a building on your phone (TAB) first', 'bad');
-        else this.conveyors.toggleBuild();
-      }
+      if (input.pressed('b')) this.conveyors.toggleBuild(); // always opens — the panel itself says what you can place
       const building = this.conveyors.build.active;
       if (!building) ui.setBuild(null);
 
