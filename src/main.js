@@ -836,27 +836,33 @@ class Game {
     const d = v;
     if (!d.isDigger) { this.ui.toast(`The ${d.name} carries no dirt`, 'bad'); return; }
     if (d.bucket < 0.01) { this.ui.toast('Bucket is empty', 'bad'); return; }
-    if (d.cycle >= 0) return;
+    if (d.cycle >= 0 || d.dumpTimer >= 0) return;
+    // Decide the target NOW, from where the bucket is when F is pressed — the same measurement the
+    // "F feed hopper" prompt uses. The loader's tip animation raises the arms (which swings the bucket
+    // forward) before the dirt actually leaves, so re-measuring at that moment could miss the hopper.
+    const bp0 = d.bucketWorldPos();
+    const truckBed = this.truck.bedWorldPos();
+    const tD = Math.hypot(truckBed.x - bp0.x, truckBed.z - bp0.z);
+    const wpD = Math.hypot(this.washPlant.hopperPos.x - bp0.x, this.washPlant.hopperPos.z - bp0.z);
+    const beltH = this.beltHopperNear(bp0.x, bp0.z, 2.6);
+    const target = tD < 3.4 ? 'truck' : beltH ? 'belt' : wpD < 4.2 ? 'plant' : 'ground';
+    if (target === 'plant' && this.washPlant.damaged) { this.ui.toast('The wash plant is wrecked — repair it from your phone', 'bad'); return; }
     const doDump = () => {
       const bp = d.bucketWorldPos();
-      const truckBed = this.truck.bedWorldPos();
-      const tD = Math.hypot(truckBed.x - bp.x, truckBed.z - bp.z);
-      const wpD = Math.hypot(this.washPlant.hopperPos.x - bp.x, this.washPlant.hopperPos.z - bp.z);
-      const beltH = this.beltHopperNear(bp.x, bp.z, 2.6);
       let msg;
-      if (tD < 3.4) {
+      if (target === 'truck') {
         const acc = this.truck.addLoad(d.bucket, d.bucketGold);
         if (acc <= 0) { this.ui.toast('Truck is full', 'bad'); return; }
         d.bucketGold -= d.bucketGold * (acc / d.bucket);
         d.bucket -= acc;
         msg = 'Loaded the truck';
-      } else if (beltH) {
+      } else if (target === 'belt') {
         const acc = this.conveyors.hopperAdd(beltH, d.bucket, d.bucketGold);
         if (acc <= 0) { this.ui.toast('Belt hopper is full', 'bad'); return; }
         d.bucketGold -= d.bucketGold * (acc / d.bucket);
         d.bucket -= acc;
         msg = 'Fed the belt hopper';
-      } else if (wpD < 4.2) {
+      } else if (target === 'plant') {
         const acc = this.feedPlant(d.bucket, d.bucketGold);
         if (acc <= 0) return;
         d.bucketGold -= d.bucketGold * (acc / d.bucket);
