@@ -81,6 +81,14 @@ export const CONFIG = {
   buildings: {
     inn: { name: 'Inn', size: 3, maxRise: 1.2, ghostHeight: 4.5 },
     barracks: { name: 'Barracks', size: 3, maxRise: 1.2, ghostHeight: 4.0 },
+    church: { name: 'Church', size: 3, maxRise: 1.2, ghostHeight: 7.5 },
+  },
+
+  church: {
+    radius: 14,       // blessed ground: friendly units inside heal
+    healRate: 9,      // hp/s for the player and mercenaries (mercs have 70 hp, you have 100)
+    seekBelow: 0.4,   // idle mercs this hurt walk to the church on their own…
+    seekUntil: 0.95,  // …and go back to their post once this healthy
   },
 
   mercs: {
@@ -163,6 +171,7 @@ export const CONFIG = {
     { id: 'beltHopper', cat: 'Logistics', name: 'Belt Hopper', desc: 'Press B to build. Dump truck loads or buckets into it; it feeds the belt in front of it. Holds 30 m³.', price: 900, consumable: true },
     { id: 'inn', cat: 'Buildings', name: 'Inn', desc: 'Press B, tool 3 to place it (6×6 m). Sleep from 19:30 to skip the night — the night raid is then fought as a dice battle by your mercenaries and turrets. No sleeping with skeletons at the door.', price: 2500, unique: true },
     { id: 'barracks', cat: 'Buildings', name: 'Barracks', desc: 'Press B, tool 4 to place it (6×6 m). Lets you recruit mercenaries who patrol the camp and fight skeletons — awake or asleep.', price: 3000, unique: true },
+    { id: 'church', cat: 'Buildings', name: 'Church', desc: 'Press B, tool 5 to place it (6×6 m). The blessed ground around it (14 m) heals you and your mercenaries, even mid-fight — skeletons get nothing. Hurt soldiers walk there on their own.', price: 3500, unique: true },
     { id: 'merc', cat: 'Buildings', name: 'Recruit Mercenary', desc: 'Paid in gold. A swordsman who guards the barracks, fights at night and rolls dice for you while you sleep. Up to 8.', goldPrice: 2.5, recruit: true },
     { id: 'mercTraining', cat: 'Buildings', name: 'Mercenary Drill', desc: 'Train the squad: +1 to every mercenary\'s battle roll per level, and harder hits in the field.', prices: [1500, 4000] },
     { id: 'towCable', cat: 'Machines', name: 'Tow Cable', desc: 'Press C near a vehicle to hook it, C at another to connect, then drive to pull it free.', price: 250, unique: true },

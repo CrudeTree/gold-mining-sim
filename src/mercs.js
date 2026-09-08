@@ -70,6 +70,7 @@ export class Merc {
     this.wanderTimer = Math.random() * 3;
     this.thinkTimer = Math.random() * 0.3;
     this.selected = false;
+    this.seekHeal = false; // off to the church to heal up
     this.stuck = 0;        // seconds spent making no progress toward a goal
     this.sideSign = 1;     // which way to sidestep around an obstacle
     /** Standing order from the player: null (guard the barracks) or
@@ -225,10 +226,22 @@ export class Merc {
       const dHome = Math.hypot(this.pos.x - home.x, this.pos.z - home.z);
       if (night < 0.3 && this.hp < this.maxHp && dHome < cfg.wander + 2) this.hp = Math.min(this.maxHp, this.hp + cfg.healRate * dt);
     } else {
+      // hurt and idle: limp over to the church's blessed ground and stay until patched up
+      const church = g.buildings.nearestChurch(this.pos.x, this.pos.z);
+      const cc = CONFIG.church;
+      if (church && !this.seekHeal && this.hp < this.maxHp * cc.seekBelow) {
+        this.seekHeal = true; this.wanderTo = null; this.wanderTimer = 0;
+      }
+      if (this.seekHeal && (!church || this.hp >= this.maxHp * cc.seekUntil)) { this.seekHeal = false; this.wanderTo = null; this.wanderTimer = 0; }
+      if (this.seekHeal && !this.wanderTo && this.wanderTimer <= 0) {
+        const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * (cc.radius * 0.4);
+        this.wanderTo = { x: church.x + Math.cos(a) * r, z: church.z + Math.sin(a) * r };
+        this.wanderTimer = 4 + Math.random() * 4; // once there, rest a while before shuffling about
+      }
       // stroll around the yard; at night stand a little closer to the fire
       this.wanderTimer -= dt;
       const dHome = Math.hypot(this.pos.x - home.x, this.pos.z - home.z);
-      if (!this.wanderTo && (this.wanderTimer <= 0 || dHome > cfg.wander + 3)) {
+      if (!this.wanderTo && !this.seekHeal && (this.wanderTimer <= 0 || dHome > cfg.wander + 3)) {
         const r = (night > 0.5 ? 0.55 : 1) * cfg.wander * (0.3 + Math.random() * 0.7);
         const a = Math.random() * Math.PI * 2;
         const wx = home.x + Math.cos(a) * r, wz = home.z + Math.sin(a) * r;
@@ -239,7 +252,7 @@ export class Merc {
         const dx = this.wanderTo.x - this.pos.x, dz = this.wanderTo.z - this.pos.z;
         const d = Math.hypot(dx, dz);
         if (d < 0.5 || this.stuck > 2) { this.wanderTo = null; this.stuck = 0; }
-        else { mx = dx / d; mz = dz / d; speed = cfg.speed * 0.45; facing = Math.atan2(dx, dz); goal = this.wanderTo; }
+        else { mx = dx / d; mz = dz / d; speed = cfg.speed * (this.seekHeal ? 0.8 : 0.45); facing = Math.atan2(dx, dz); goal = this.wanderTo; }
       }
       this.attackTimer = Math.min(this.attackTimer, 0.4);
       // patch up at home by day

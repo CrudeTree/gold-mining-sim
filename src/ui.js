@@ -102,7 +102,7 @@ export class UI {
     this._buildKey = key;
     document.getElementById('beltCount').textContent = `×${info.belts}`;
     document.getElementById('hopperCount').textContent = `×${info.hoppers}`;
-    for (const type of ['inn', 'barracks']) {
+    for (const type of ['inn', 'barracks', 'church']) {
       const row = el.querySelector(`[data-tool="${type}"]`);
       const owned = !!info.owned[type], kits = info.kits[type] || 0;
       row.classList.toggle('locked', !owned);
@@ -298,6 +298,7 @@ export class UI {
           meta = item.id === 'loader' || item.id === 'dozer' ? 'Parked at camp'
             : item.id === 'inn' ? ((s.kits?.inn || 0) > 0 ? 'Ready to place (B → 3)' : 'Built')
             : item.id === 'barracks' ? ((s.kits?.barracks || 0) > 0 ? 'Ready to place (B → 4)' : 'Built')
+            : item.id === 'church' ? ((s.kits?.church || 0) > 0 ? 'Ready to place (B → 5)' : 'Built')
             : item.id === 'towCable' ? 'In your pack' : 'In your hotbar';
         }
         else { price = item.price; label = `$${price.toLocaleString()}`; }
@@ -396,9 +397,9 @@ export class UI {
     mk('+ $10,000', '', () => { s.money += 10000; this.toast('+$10,000 (cheat)', 'gold'); this.refreshPhone(); });
     mk('+ 50 g gold', '', () => { s.gold += 50; this.toast('+50 g gold (cheat)', 'gold'); this.refreshPhone(); });
     mk('+ 20 belts, 2 hoppers, 3 turrets, 5 torches', '', () => { s.belts += 20; s.hoppers += 2; s.turrets += 3; s.torches += 5; this.toast('Supplies added (cheat)', 'gold'); this.refreshPhone(); });
-    mk('Unlock Inn & Barracks kits', '', () => {
-      for (const id of ['inn', 'barracks']) if (!s.owned[id]) { s.owned[id] = true; s.kits[id] = (s.kits[id] || 0) + 1; }
-      this.toast('Building kits added — press B, then 3 / 4 (cheat)', 'gold'); this.refreshPhone();
+    mk('Unlock Inn, Barracks & Church kits', '', () => {
+      for (const id of ['inn', 'barracks', 'church']) if (!s.owned[id]) { s.owned[id] = true; s.kits[id] = (s.kits[id] || 0) + 1; }
+      this.toast('Building kits added — press B, then 3 / 4 / 5 (cheat)', 'gold'); this.refreshPhone();
     });
     mk('Skip to next morning (08:00)', '', () => { g.daynight.hours = 8; g.prevHours = 8; if (g.enemies.nightActive || g.enemies.list.length) g.enemies.endNight(); g.enemies.resolved = false; this.toast('Time set to 08:00 (cheat)'); this.refreshPhone(); });
     mk('Skip to dusk (20:00)', '', () => { g.daynight.hours = 20; g.prevHours = 20; this.toast('Time set to 20:00 (cheat)'); this.refreshPhone(); });

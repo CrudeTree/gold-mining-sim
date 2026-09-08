@@ -159,7 +159,7 @@ class Game {
       turrets: 0,
       belts: 0,
       hoppers: 0,
-      kits: { inn: 0, barracks: 0 },
+      kits: { inn: 0, barracks: 0, church: 0 },
       sleeping: false,
       nightsSlept: 0,
       battlesWon: 0,
@@ -408,6 +408,7 @@ class Game {
       if (id === 'towCable') this.ui.toast('Tow cable bought — press C next to a vehicle to hook it', 'gold');
       if (id === 'inn') { s.kits.inn = (s.kits.inn || 0) + 1; this.ui.toast('Inn kit bought — press B, then 3 to place it', 'gold'); }
       if (id === 'barracks') { s.kits.barracks = (s.kits.barracks || 0) + 1; this.ui.toast('Barracks kit bought — press B, then 4 to place it', 'gold'); }
+      if (id === 'church') { s.kits.church = (s.kits.church || 0) + 1; this.ui.toast('Church kit bought — press B, then 5 to place it', 'gold'); }
       if (id === 'axe') this.ui.toast('Axe added to slot 6 — chop trees for wood', 'gold');
       if (id === 'detector') this.ui.toast('Metal detector added to slot 7 — sweep the ground to find gold', 'gold');
     } else if (item.recruit) {
@@ -502,7 +503,7 @@ class Game {
     this.terrain.deserializeReveal(d.reveal);
     this.conveyors.deserialize(d.conveyors); // after heights so belts sit on the saved ground
     this.buildings.deserialize(d.buildings);
-    this.state.kits = { inn: 0, barracks: 0, ...(this.state.kits || {}) };
+    this.state.kits = { inn: 0, barracks: 0, church: 0, ...(this.state.kits || {}) };
     this.mercs.deserialize(d.mercs);
     this.state.sleeping = false;
     for (const t of d.torches || []) this.placeTorch(t.x, t.z, false);
@@ -1368,6 +1369,12 @@ class Game {
         if (input.clicked(0) || (input.mouseDown(0) && s.swordTimer <= 0)) this.chopTree(aim);
         const tree = this.forest.nearest(p.pos.x, p.pos.z, 4);
         prompt = tree ? `<b>LMB</b> chop tree (${tree.hp}/${CONFIG.treeHits} hits left)` : `<b>LMB</b> chop a tree · ${s.wood} logs`;
+      } else if (s.hotbar === 7) {
+        // command standard: selection and orders are handled by this.command
+        const n = this.mercs.count, sel = this.command.selected.length;
+        prompt = !n ? 'No mercenaries — recruit them on your phone (<b>TAB</b> → Buildings)'
+          : sel ? `${sel}/${n} selected · <b>RMB</b> ground to move, <b>RMB</b> skeleton to attack · <b>M</b> move <b>Z</b> patrol <b>X</b> stand <b>H</b> home`
+          : `<b>LMB</b> a soldier or drag a box to select · double-click for all ${n}`;
       } else {
         // turret placement
         if (aim) {
@@ -1422,11 +1429,14 @@ class Game {
       } else if (!building && this.buildings.nearest(p.pos.x, p.pos.z, 3.4, 'barracks')) {
         const n = this.mercs.count;
         prompt = `<b>Barracks</b> · ${n}/${CONFIG.mercs.max} mercenaries on the payroll · recruit more on your phone (<b>TAB</b> → Buildings, ${CONFIG.mercs.goldPrice} g each)`;
+      } else if (!building && this.buildings.nearest(p.pos.x, p.pos.z, 3.4, 'church')) {
+        const healing = s.hp < s.maxHp;
+        prompt = `<b>Church</b> · blessed ground heals you and your mercenaries within ${CONFIG.church.radius} m${healing ? ' · <span style="color:#ffe08a">healing…</span>' : ''}`;
       } else if (!building && this.conveyors.nearestHopper(p.pos.x, p.pos.z, 3.4)) {
         const h = this.conveyors.nearestHopper(p.pos.x, p.pos.z, 3.4);
         prompt = `Belt hopper ${Math.round((h.vol / h.capacity) * 100)}%${s.carry > 0.01 ? '  ·  <b>F</b> dump bucket into it' : ''}`;
       } else if (this.cable.a && !this.cable.b) prompt = `Carrying the tow cable from the ${this.cable.a.name} — walk to another vehicle and press <b>C</b>`;
-      if (building) prompt = `Build · <b>1</b> belt <b>2</b> hopper <b>3</b> inn <b>4</b> barracks · <b>R</b> rotate · <b>LMB</b> place (drag for a line) · <b>RMB</b> remove · <b>B</b> done${nearV ? `  ·  <b>E</b> enter ${nearV.name}` : ''}`;
+      if (building) prompt = `Build · <b>1</b> belt <b>2</b> hopper <b>3</b> inn <b>4</b> barracks <b>5</b> church · <b>R</b> rotate · <b>LMB</b> place (drag for a line) · <b>RMB</b> remove · <b>B</b> done${nearV ? `  ·  <b>E</b> enter ${nearV.name}` : ''}`;
       if (input.pressed('c')) this.cableAction(this.nearestVehicle(p.pos, 3.5));
       if (input.pressed('e') && interact) interact();
       if (input.pressed('f')) this.depositCarry();

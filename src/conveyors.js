@@ -567,6 +567,10 @@ export class Conveyors {
       if (s.owned.barracks) b.tool = 'barracks';
       else ui.toast('Buy the Barracks on your phone (TAB) first', 'bad');
     }
+    if (input.pressed('5')) {
+      if (s.owned.church) b.tool = 'church';
+      else ui.toast('Buy the Church on your phone (TAB) first', 'bad');
+    }
     const isBuilding = !!CONFIG.buildings[b.tool];
     if (!aim) {
       if (input.pressed('r')) b.dir = (b.dir + 1) % 4;

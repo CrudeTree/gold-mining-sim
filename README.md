@@ -98,6 +98,11 @@ Buildings go on the same grid as the belts (build mode, **B**). Their footprint 
   comes within earshot — while you're awake they fight for real alongside your turrets, and skeletons fight
   back. **Mercenary Drill** (phone upgrade) makes them hit harder and adds +1 to their battle rolls per level.
 
+- **Church** ($3,500, 6×6 m, tool **5**) — the blessed ground around it (14 m, shown as a soft glowing disc)
+  heals **you and your mercenaries** at 9 hp/s, and unlike normal regen it keeps working while you're being
+  hit — so fall back to it mid-fight. Skeletons and everything else get nothing. Hurt soldiers with no orders
+  walk over on their own and return to their post once they're patched up.
+
 ### Commanding mercenaries (hotbar 8)
 
 Owning a Barracks unlocks the **Command** standard in slot **8**. With it out, the game plays like an RTS:

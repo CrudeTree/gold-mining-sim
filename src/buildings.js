@@ -7,7 +7,8 @@ import { G } from './conveyors.js';
  * cells are registered in the conveyor cell map (type 'building', dir −1) so belts can't run through
  * them, and each building gets a round collider for the player and vehicles.
  *
- * Types live in CONFIG.buildings. Currently: the Inn — sleep through the night, Minecraft-style.
+ * Types live in CONFIG.buildings: the Inn (sleep through the night), the Barracks (mercenaries) and the
+ * Church (blessed ground that heals the player and mercenaries).
  */
 
 const WOOD = new THREE.MeshStandardMaterial({ color: 0x9a6b3f, roughness: 0.85 });
@@ -166,7 +167,63 @@ function buildBarracks(b) {
   return g;
 }
 
-const BUILDERS = { inn: buildInn, barracks: buildBarracks };
+const PLASTER = new THREE.MeshStandardMaterial({ color: 0xe8dcc4, roughness: 0.9 });
+const SLATE = new THREE.MeshStandardMaterial({ color: 0x4a5566, roughness: 0.8 });
+const GOLD = new THREE.MeshStandardMaterial({ color: 0xd4a53a, roughness: 0.35, metalness: 0.7 });
+const BRONZE = new THREE.MeshStandardMaterial({ color: 0x8c6a3a, roughness: 0.4, metalness: 0.6 });
+const AURA_MAT = new THREE.MeshBasicMaterial({ color: 0xfff1b8, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide });
+const AURA_EDGE_MAT = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+
+/** Small stone chapel with a bell tower. Front (door) is +z. Footprint 3×3 cells = 6×6 m. */
+function buildChurch(b) {
+  const g = new THREE.Group();
+  box(6.0, 0.4, 6.0, STONE, 0, 0.2, 0, g);                       // stone steps / plinth
+  // nave
+  box(3.6, 3.4, 5.0, PLASTER, 0.5, 2.1, -0.3, g);
+  for (const x of [-1.32, 2.32]) for (let i = 0; i < 3; i++) box(0.22, 3.2, 0.3, STONE, x, 2.0, -2.2 + i * 1.9, g); // buttresses
+  // nave roof: steep gable along z
+  const tri = new THREE.Shape();
+  tri.moveTo(-2.0, 0); tri.lineTo(2.0, 0); tri.lineTo(0, 1.9); tri.closePath();
+  const attic = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 5.2, bevelEnabled: false }), PLASTER);
+  attic.position.set(0.5, 3.78, -2.9);
+  attic.castShadow = true;
+  g.add(attic);
+  const pitch = 0.76;
+  const l = box(2.9, 0.2, 5.6, SLATE, -0.55, 4.75, -0.3, g); l.rotation.z = pitch;   // rises toward the ridge at x=0.5
+  const r = box(2.9, 0.2, 5.6, SLATE, 1.55, 4.75, -0.3, g); r.rotation.z = -pitch;
+  box(0.3, 0.26, 5.7, SLATE, 0.5, 5.7, -0.3, g);                 // ridge
+  // bell tower at the front-left corner
+  box(1.7, 6.2, 1.7, STONE, -1.75, 3.3, 1.9, g);
+  for (const [x, z, rot] of [[-1.75, 2.76, 0], [-1.75, 1.04, 0], [-0.89, 1.9, Math.PI / 2], [-2.61, 1.9, Math.PI / 2]]) {
+    const arch = box(0.7, 1.1, 0.08, DOOR, x, 5.6, z, g); arch.rotation.y = rot; // belfry openings
+  }
+  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.34, 0.5, 10), BRONZE);
+  bell.position.set(-1.75, 5.55, 1.9); bell.castShadow = true; g.add(bell);
+  b.bell = bell;
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(1.35, 2.4, 4), SLATE);
+  spire.position.set(-1.75, 7.6, 1.9); spire.rotation.y = Math.PI / 4; spire.castShadow = true; g.add(spire);
+  box(0.1, 0.9, 0.1, GOLD, -1.75, 9.15, 1.9, g);                 // cross
+  box(0.5, 0.1, 0.1, GOLD, -1.75, 9.3, 1.9, g);
+  // door + arched windows (stained glass glows at night)
+  box(1.0, 2.1, 0.12, DOOR, 0.5, 1.45, 2.26, g);
+  box(1.3, 0.3, 0.16, STONE, 0.5, 2.6, 2.26, g);
+  b.doorLocal = new THREE.Vector3(0.5, 0, 4.4);
+  b.windowMat = new THREE.MeshStandardMaterial({ color: 0x4d6a9c, emissive: 0xffc06a, emissiveIntensity: 0, roughness: 0.3 });
+  for (let i = 0; i < 2; i++) {
+    box(0.1, 1.5, 0.6, b.windowMat, 2.32, 2.3, -1.4 + i * 1.9, g);
+    box(0.1, 1.5, 0.6, b.windowMat, -1.32, 2.3, -1.4 + i * 1.9, g);
+  }
+  const rose = new THREE.Mesh(new THREE.CircleGeometry(0.45, 12), b.windowMat);
+  rose.position.set(0.5, 3.9, 2.32); g.add(rose);
+  b.heals = true; // Buildings.place() drapes the blessed-ground aura over the terrain around it
+  // door lamp
+  b.lamp = new THREE.PointLight(0xffd39a, 0, 14, 2);
+  b.lamp.position.set(1.4, 2.6, 2.6);
+  g.add(b.lamp);
+  return g;
+}
+
+const BUILDERS = { inn: buildInn, barracks: buildBarracks, church: buildChurch };
 
 export class Buildings {
   constructor(game) {
@@ -234,15 +291,79 @@ export class Buildings {
       cv._protect(cc.x, cc.z, 1);
     }
     for (const [i, j] of this.cellsFor(gx, gz, d.size)) cv._refreshAround(i, j);
+    if (b.heals) this._makeAura(b);
     this.list.push(b);
     if (!silent) this.game.particles.burst(c.x, b.y + 2, c.z, 30, 0xe6b422, 3, 2.5, 0.8);
     return b;
+  }
+
+  /** Blessed ground: a soft disc plus a rim, draped over the terrain so it reads on hills. */
+  _makeAura(b) {
+    const t = this.game.terrain, R = CONFIG.church.radius;
+    const drape = (geo) => {
+      const pa = geo.attributes.position;
+      for (let i = 0; i < pa.count; i++) {
+        const x = b.x + pa.getX(i), z = b.z + pa.getY(i); // circle is built in XY; lay it flat in XZ
+        pa.setXYZ(i, x, t.heightAt(x, z) + 0.1, z);
+      }
+      pa.needsUpdate = true;
+      geo.computeBoundingSphere();
+      return geo;
+    };
+    b.aura = new THREE.Mesh(drape(new THREE.CircleGeometry(R, 56)), AURA_MAT.clone());
+    b.auraEdge = new THREE.Mesh(drape(new THREE.RingGeometry(R - 0.35, R, 72)), AURA_EDGE_MAT.clone());
+    b.aura.renderOrder = b.auraEdge.renderOrder = 1;
+    this.group.add(b.aura, b.auraEdge);
+  }
+
+  /** Living friendlies standing on blessed ground heal; skeletons never do. */
+  _heal(dt) {
+    const g = this.game, c = CONFIG.church, R2 = c.radius * c.radius, s = g.state;
+    let anyChurch = false;
+    for (const b of this.list) {
+      if (!b.heals) continue;
+      anyChurch = true;
+      const glow = 0.5 + 0.5 * Math.sin(this.time * 1.6);
+      b.aura.material.opacity = 0.12 + 0.06 * glow;
+      b.auraEdge.material.opacity = 0.4 + 0.25 * glow;
+      if (b.bell) b.bell.rotation.x = Math.sin(this.time * 1.1) * 0.12;
+      // the player (on foot or in a machine — the machine is in the yard too)
+      const p = g.player.pos;
+      if (!s.ko && s.hp < s.maxHp && (p.x - b.x) ** 2 + (p.z - b.z) ** 2 < R2) {
+        s.hp = Math.min(s.maxHp, s.hp + c.healRate * dt);
+        this._sparkle(p.x, p.y + 0.6, p.z, dt);
+      }
+      for (const m of g.mercs.list) {
+        if (!m.alive || m.hp >= m.maxHp) continue;
+        if ((m.pos.x - b.x) ** 2 + (m.pos.z - b.z) ** 2 >= R2) continue;
+        m.hp = Math.min(m.maxHp, m.hp + c.healRate * dt);
+        this._sparkle(m.pos.x, m.pos.y + 0.6, m.pos.z, dt);
+      }
+    }
+    return anyChurch;
+  }
+
+  _sparkle(x, y, z, dt) {
+    // a gentle rising glitter, ~6 motes a second per unit
+    if (Math.random() < dt * 6) this.game.particles.burst(x + (Math.random() - 0.5) * 0.8, y + Math.random() * 0.8, z + (Math.random() - 0.5) * 0.8, 1, 0xfff1b8, 0.25, 0.9, 1.2, -1.2);
+  }
+
+  /** Nearest church by centre (the aura is centred on the building, not its door). */
+  nearestChurch(x, z) {
+    let best = null, bd = Infinity;
+    for (const b of this.list) {
+      if (!b.heals) continue;
+      const d = Math.hypot(b.x - x, b.z - z);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
   }
 
   remove(b) {
     const cv = this.game.conveyors;
     this.list.splice(this.list.indexOf(b), 1);
     this.group.remove(b.group);
+    if (b.aura) { this.group.remove(b.aura, b.auraEdge); b.aura.geometry.dispose(); b.auraEdge.geometry.dispose(); }
     const ci = this.game.colliders.indexOf(b.collider);
     if (ci >= 0) this.game.colliders.splice(ci, 1);
     for (const cell of b.cells) {
@@ -287,6 +408,7 @@ export class Buildings {
       if (b.lamp) b.lamp.intensity = (b.fireLocal ? 14 * (0.85 + 0.15 * Math.sin(this.time * 9)) : 18) * night;
       if (b.flag) b.flag.rotation.y = Math.sin(this.time * 2.3) * 0.25;
     }
+    this._heal(dt);
     this.smokeTimer -= dt;
     if (this.smokeTimer <= 0) {
       this.smokeTimer = 0.35;
