@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Golden Valley — Gold Mining Simulator</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="vignette"></div>
+
+    <div id="hud" class="hidden">
+      <div id="labels"></div>
+      <div id="stats">
+        <div class="stat"><span class="icon">$</span><span id="money">0</span></div>
+        <div class="stat gold"><span class="icon">Au</span><span id="gold">0.00 g</span></div>
+        <div class="stat hidden" id="woodStat"><span class="icon">⌸</span><span id="wood">0</span><span class="sub">logs</span></div>
+        <div class="stat"><span id="dayIcon" class="icon">☀</span><span id="clock">08:00</span><span id="dayNum" class="sub">Day 1</span></div>
+        <div class="stat"><span id="weatherIcon" class="icon">◌</span><span id="weatherText" class="sub">Clear</span></div>
+      </div>
+      <div id="health">
+        <div class="label"><span>♥ Health</span><span id="hpText">100</span></div>
+        <div class="bar hp"><div id="hpFill"></div></div>
+      </div>
+      <div id="nightBanner" class="hidden"><span id="nightText"></span></div>
+
+      <div id="carry">
+        <div class="label"><span>Bucket</span><span id="carryRich"></span></div>
+        <div class="bar"><div id="carryFill"></div></div>
+      </div>
+
+      <div id="vehicleHud" class="hidden">
+        <div class="label"><span id="vehicleName">Vehicle</span><span id="vehicleRich"></span></div>
+        <div class="bar"><div id="vehicleFill"></div></div>
+        <div class="hint" id="vehicleHint"></div>
+      </div>
+
+      <div id="progress" class="hidden"><div id="progressFill"></div></div>
+      <div id="prompt"></div>
+
+      <div id="hotbar">
+        <div class="slot active" data-i="0"><span class="key">1</span><span class="name">Shovel</span></div>
+        <div class="slot" data-i="1"><span class="key">2</span><span class="name">Gold Pan</span></div>
+        <div class="slot" data-i="2"><span class="key">3</span><span class="name">Torch</span><span class="count" id="torchCount">6</span></div>
+        <div class="slot" data-i="3"><span class="key">4</span><span class="name" id="swordName">Rusty Sword</span></div>
+        <div class="slot" data-i="4"><span class="key">5</span><span class="name">Turret</span><span class="count" id="turretCount">0</span></div>
+        <div class="slot locked" data-i="5" id="axeSlot"><span class="key">6</span><span class="name">Axe</span><span class="count" id="woodCount"></span></div>
+        <div class="slot locked" data-i="6" id="detectorSlot"><span class="key">7</span><span class="name">Detector</span></div>
+        <div class="slot locked" data-i="7" id="commandSlot"><span class="key">8</span><span class="name">Command</span><span class="count" id="mercCount"></span></div>
+      </div>
+      <div id="selBox" class="hidden"></div>
+      <div id="cmdPanel" class="hidden">
+        <div class="ewTitle">Mercenaries <span class="ewKeys" id="cmdCount"></span></div>
+        <div class="cmdBtns">
+          <div class="cmdBtn" data-cmd="move"><span class="key">M</span>Move</div>
+          <div class="cmdBtn" data-cmd="patrol"><span class="key">Z</span>Patrol</div>
+          <div class="cmdBtn" data-cmd="stop"><span class="key">X</span>Stand ground</div>
+          <div class="cmdBtn" data-cmd="home"><span class="key">H</span>To barracks</div>
+        </div>
+        <div class="ewHint" id="cmdHint"></div>
+      </div>
+      <div id="toasts"></div>
+      <div id="earthworks" class="hidden">
+        <div class="ewTitle">Earthworks</div>
+        <div class="ewModes">
+          <div class="ewMode" data-mode="raise"><span class="key">1</span>Raise</div>
+          <div class="ewMode" data-mode="lower"><span class="key">2</span>Lower</div>
+          <div class="ewMode" data-mode="flatten"><span class="key">3</span>Flatten</div>
+        </div>
+        <div class="ewRow"><span>Brush</span><span id="ewBrush">◉◉◯◯</span><span class="ewKeys">[ ]</span></div>
+        <div class="ewRow"><span>Rate</span><span id="ewCost">$9 / m³</span></div>
+        <div class="ewRow"><span>Spent</span><span id="ewSpent">$0</span></div>
+        <div class="ewHint" id="ewHint">Hold LMB on the ground to work</div>
+      </div>
+      <div id="buildPanel" class="hidden">
+        <div class="ewTitle">Build <span class="ewKeys">B to close</span></div>
+        <div class="ewModes">
+          <div class="ewMode" data-tool="belt"><span class="key">1</span>Belt <span class="count" id="beltCount">0</span></div>
+          <div class="ewMode" data-tool="hopper"><span class="key">2</span>Hopper <span class="count" id="hopperCount">0</span></div>
+          <div class="ewMode" data-tool="inn"><span class="key">3</span>Inn <span class="count" id="innCount">0</span></div>
+          <div class="ewMode" data-tool="barracks"><span class="key">4</span>Barracks <span class="count" id="barracksCount">0</span></div>
+        </div>
+        <div class="ewRow"><span>Facing</span><span id="buildDir">↑</span><span class="ewKeys">R rotate</span></div>
+        <div class="ewRow"><span>Place</span><span>LMB · drag for a line</span></div>
+        <div class="ewRow"><span>Remove</span><span>RMB</span></div>
+        <div class="ewHint" id="buildHint">Belts ending at the wash plant hopper feed it</div>
+      </div>
+      <div id="sleep" class="hidden">
+        <div class="zz">💤</div>
+        <div class="sleepTitle">Sleeping…</div>
+        <div id="sleepTime">22:00</div>
+        <div class="sleepHint"><b>E</b> to get up early</div>
+      </div>
+      <div id="battle" class="hidden">
+        <div class="bHead">
+          <div class="bTitle" id="bTitle">Night 3 — The Raid</div>
+          <div class="bSub" id="bSub">🌕 Full moon · Clear</div>
+        </div>
+        <div class="bArena">
+          <div class="bSide left">
+            <div class="bSideTitle">Your defenders <span id="bLeftCount"></span></div>
+            <div class="bUnits" id="bLeft"></div>
+            <div class="bBuffs" id="bLeftBuffs"></div>
+          </div>
+          <div class="bCentre">
+            <div class="bRound" id="bRound">Round 1</div>
+            <div class="bDice">
+              <div class="die left" id="dieL"><span>?</span><em id="dieLMod"></em></div>
+              <div class="vs">vs</div>
+              <div class="die right" id="dieR"><span>?</span><em id="dieRMod"></em></div>
+            </div>
+            <div class="bResult" id="bResult">The horde approaches…</div>
+            <div class="bLog" id="bLog"></div>
+          </div>
+          <div class="bSide right">
+            <div class="bSideTitle">Skeleton horde <span id="bRightCount"></span></div>
+            <div class="bUnits" id="bRight"></div>
+            <div class="bBuffs" id="bRightBuffs"></div>
+          </div>
+        </div>
+        <div class="bFoot">
+          <div class="bRules">d6 + bonuses each round · loser loses a unit · ties go to the defender · <b>+1 per other unique unit type</b> on your side</div>
+          <div class="bBtns">
+            <button class="btn" id="bSkip">Skip (Space)</button>
+            <button class="btn primary hidden" id="bDone">Sleep till morning (E)</button>
+          </div>
+        </div>
+      </div>
+      <div id="nuggetPop"><div class="big"></div><div class="sub"></div></div>
+      <div id="help">TAB: phone · Esc: menu &amp; controls</div>
+    </div>
+
+    <div id="ko" class="panel hidden">
+      <h2>Knocked out!</h2>
+      <p>The skeletons overwhelmed you. You wake up back at camp, missing your bucket of paydirt and some gold.</p>
+    </div>
+
+    <div id="phone" class="hidden">
+      <div class="phone-body">
+        <div class="phone-top"><span id="phoneClock">08:00</span><span class="phone-title">Golden Valley</span><span>▮▮▮</span></div>
+        <div class="phone-wallet">
+          <div><span class="sub">Wallet</span><b>$<span id="phMoney">0</span></b></div>
+          <div class="gold"><span class="sub">Gold</span><b><span id="phGold">0.00</span> g</b></div>
+        </div>
+        <div id="phoneContent" class="phone-screen"></div>
+        <div class="phone-tabs">
+          <button data-tab="shop" class="active">Shop</button>
+          <button data-tab="stats">Stats</button>
+          <button data-tab="system">System</button>
+        </div>
+      </div>
+      <div class="phone-hint">TAB or Esc to close</div>
+    </div>
+
+    <div id="pause" class="panel hidden">
+      <h2>Paused</h2>
+      <div class="menu">
+        <button id="resumeBtn" class="btn primary">Resume</button>
+        <button id="saveBtn" class="btn">Save game</button>
+        <button id="loadBtn" class="btn">Load last save</button>
+        <button id="newBtn" class="btn danger">New game</button>
+      </div>
+      <div class="controls">
+        <h3>Controls</h3>
+        <div><b>WASD</b> move · <b>Shift</b> run · <b>Mouse</b> aim · <b>Wheel</b> zoom</div>
+        <div><b>LMB</b> use tool (dig / pan / place torch / swing sword / place turret)</div>
+        <div><b>1 – 8</b> shovel / pan / torch / sword / turret / axe / metal detector / command</div>
+        <div>The <b>metal detector</b> reveals gold on bedrock as glowing veins under see-through ground. Hold <b>LMB</b> to sweep wider and faster.</div>
+        <div>The excavator bucket holds <b>one scoop</b> — swing it over the truck bed and press <b>F</b>, then dig again.</div>
+        <div><b>TAB</b> phone: shop, sell gold, stats, save</div>
+        <div><b>E</b> enter or exit vehicles, collect gold from the wash plant</div>
+        <div><b>F</b> dump paydirt into truck or hopper (or on the ground)</div>
+        <div><b>C</b> tow cable: hook a vehicle, connect to another, drive to pull it out</div>
+        <div><b>Bulldozer</b>: earthworks brush — <b>1</b>/<b>2</b>/<b>3</b> raise / lower / flatten, <b>[ ]</b> brush size, hold <b>LMB</b> to work (costs $ per m³)</div>
+        <div><b>B</b> build conveyors: <b>1</b> belt / <b>2</b> hopper, <b>R</b> rotate, <b>LMB</b> place (drag to lay a line — belts curve on their own), <b>RMB</b> remove. Dump loads into a belt hopper; a belt ending at the wash plant hopper feeds it.</div>
+        <div><b>Inn</b> (buy on phone, place with <b>B</b> → <b>3</b>): stand at the door after 19:30 and press <b>E</b> to sleep until 06:00. Your turrets fight on while you rest — nothing sleeps if skeletons are near the door.</div>
+        <h3>How to strike it rich</h3>
+        <div>Gold sits just above <b>bedrock</b>. Topsoil is worthless — strip it, then load the grey-gold gravel.</div>
+        <div>Pan stream gravel while standing in water, or fill the truck and dump it in the wash plant hopper.</div>
+        <h3>Surviving the night</h3>
+        <div>Skeletons attack after <b>20:30</b> and crumble at dawn. They go for you, your turrets, and the wash plant's sluice gold.</div>
+        <div>Driving over them works too. Buy turrets on your phone and place them around camp.</div>
+        <div>Build a <b>Barracks</b> and hire mercenaries with gold. Sleep at the <b>Inn</b> and the raid is fought as a dice battle — lose it and the horde wrecks your machines.</div>
+        <div><b>Command</b> (slot <b>8</b>): <b>LMB</b> / drag to select soldiers, double-click for all · <b>RMB</b> ground to move, <b>RMB</b> skeleton to attack · <b>M</b> move, <b>Z</b> patrol, <b>X</b> stand ground, <b>H</b> back to barracks.</div>
+      </div>
+    </div>
+
+    <div id="start" class="panel">
+      <h1>Golden Valley</h1>
+      <p class="tag">A peaceful gold mining simulator (by day)</p>
+      <div class="menu">
+        <button id="continueBtn" class="btn primary hidden">Continue</button>
+        <button id="newGameBtn" class="btn">New game</button>
+      </div>
+      <div class="controls">
+        <div><b>WASD</b> move · <b>Mouse</b> aim · <b>LMB</b> use tool · <b>E</b> interact · <b>F</b> dump · <b>1-7</b> tools · <b>B</b> build · <b>TAB</b> phone · <b>Esc</b> menu</div>
+        <div class="sub">Tip: dig near the stream — bedrock is shallow there and the gravel is rich. Be back at camp before 20:30.</div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
